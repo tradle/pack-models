@@ -5,7 +5,7 @@
   "main": "merge.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tradle/merge-files.git"
+    "url": "git+https://github.com/tradle/models-files.git"
   },
   "keywords": [
     "models"
@@ -13,7 +13,7 @@
   "author": "pgmemk",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/tradle/merge-files/issues"
+    "url": "https://github.com/tradle/models-files/issues"
   },
-  "homepage": "https://github.com/tradle/merge-files#readme"
+  "homepage": "https://github.com/tradle/models-files#readme"
 }
