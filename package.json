@@ -2,7 +2,8 @@
   "name": "@tradle/models-files",
   "version": "1.0.0",
   "description": "Merge data models in one file",
-  "main": "merge.js",
+  "main": "index.js",
+  "bin": "./merge.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tradle/models-files.git"
