@@ -1,0 +1,19 @@
+{
+  "name": "merge-files",
+  "version": "1.0.0",
+  "description": "Merge data models in one file",
+  "main": "merge.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tradle/merge-files.git"
+  },
+  "keywords": [
+    "models"
+  ],
+  "author": "pgmemk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tradle/merge-files/issues"
+  },
+  "homepage": "https://github.com/tradle/merge-files#readme"
+}
