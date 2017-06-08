@@ -1,9 +1,11 @@
 {
   "name": "@tradle/models-files",
   "version": "1.0.1",
-  "description": "Merge data models in one file",
+  "description": "package data models, interpolate values, etc.",
   "main": "index.js",
-  "bin": "./merge.js",
+  "bin": {
+    "build-models": "./cmd.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tradle/models-files.git"
@@ -16,5 +18,11 @@
   "bugs": {
     "url": "https://github.com/tradle/models-files/issues"
   },
-  "homepage": "https://github.com/tradle/models-files#readme"
+  "homepage": "https://github.com/tradle/models-files#readme",
+  "dependencies": {
+    "dot-prop": "^4.1.1",
+    "findit": "^2.0.0",
+    "minimist": "^1.2.0",
+    "pify": "^3.0.0"
+  }
 }
