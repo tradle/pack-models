@@ -53,7 +53,7 @@ function embedValues (modelsDir, valuesDir) {
   })
 }
 
-function merge (modelsDir, outFilePath) {
+function merge (modelsDir, outFilePath, toArray) {
   if (typeof outFilePath === 'undefined') {
     outFilePath = modelsDir
     modelsDir = null
@@ -69,12 +69,18 @@ function merge (modelsDir, outFilePath) {
       const models = files
         .map(file => require(path.join(modelsDir, file)))
 
-      const byId = {}
-      for (const model of models) {
-        byId[model.id] = model
+      let contents
+      if (toArray) {
+        contents = genModelsFile(models)
+      } else {
+        const byId = {}
+        for (const model of models) {
+          byId[model.id] = model
+        }
+
+        contents = genModelsFile(byId)
       }
 
-      const contents = genModelsFile(byId)
       return fs.writeFile(outFilePath, contents)
     })
 }
