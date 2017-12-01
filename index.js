@@ -67,10 +67,14 @@ function merge (modelsDir, outFilePath) {
       files = files.filter(file => /\.json$/.test(file))
 
       const models = files
-        .map(file => path.relative(outDir, path.join(modelsDir, file)))
-        .map(relPath => `\nrequire('./${relPath}')`)
+        .map(file => require(path.join(modelsDir, file)))
 
-      const contents = genModelsFile(models)
+      const byId = {}
+      for (const model of models) {
+        byId[model.id] = model
+      }
+
+      const contents = genModelsFile(byId)
       return fs.writeFile(outFilePath, contents)
     })
 }
@@ -95,10 +99,5 @@ function prettify (obj) {
 }
 
 function genModelsFile (models) {
-  return `
-const models = module.exports = [${models.join(',')}]
-models.forEach(function (m) {
-  models[m.id] = m
-})
-`.trim()
+  return JSON.stringify(models)
 }
