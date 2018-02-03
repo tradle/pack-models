@@ -36,12 +36,18 @@ if (help) {
   process.exit(0)
 }
 
+const tasks = []
 if (input && values) {
   console.log('embedding values')
-  embedValues(input, values)
+  tasks.push(embedValues(input, values))
 }
 
 if (input && output) {
   console.log('merging models')
-  merge(input, output, array)
+  tasks.push(merge(input, output, array))
 }
+
+Promise.all(tasks).catch(err => {
+  console.error(err.stack)
+  process.exitCode = 1
+})
