@@ -42,10 +42,8 @@ if (help) {
 const tasks = []
 
 if (dictionary) {
-  if (!language)
-    language = 'en'
   console.log('generate dictionary: ' + dictionary)
-  tasks.push(writeDictionary(dictionary, language))
+  tasks.push(writeDictionary(dictionary, language || 'en'))
 }
 if (input && values) {
   console.log('embedding values')
