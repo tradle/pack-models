@@ -2,6 +2,7 @@
 
 const path = require('path')
 const { merge, embedValues } = require('./index')
+const { writeDictionary } = require('./dictionary')
 const HELP = `
   Usage:
 
@@ -13,6 +14,7 @@ const HELP = `
   --array, -a   export array of models instead of id->model map
   --values, -i  path/to/values directory (values to embed in models)
   --help, -h    see this menu again
+  --dictionary, -d generate dictionaries for models of this repository
 `
 
 const cwd = process.cwd()
@@ -21,7 +23,9 @@ const argv = require('minimist')(process.argv.slice(2), {
     i: 'input',
     o: 'output',
     v: 'values',
-    h: 'help'
+    h: 'help',
+    d: 'dictionary',
+    l: 'language'
   },
   // default: {
   //   input: path.join(cwd, 'models'),
@@ -30,13 +34,19 @@ const argv = require('minimist')(process.argv.slice(2), {
   // }
 })
 
-const { input, output, values, help, array } = argv
+const { input, output, values, help, dictionary, language, array } = argv
 if (help) {
   console.log(HELP)
   process.exit(0)
 }
-
 const tasks = []
+
+if (dictionary) {
+  if (!language)
+    language = 'en'
+  console.log('generate dictionary: ' + dictionary)
+  tasks.push(writeDictionary(dictionary, language))
+}
 if (input && values) {
   console.log('embedding values')
   tasks.push(embedValues(input, values))

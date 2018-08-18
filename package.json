@@ -29,6 +29,8 @@
     "lint": "eslint --quiet --ignore-path .gitignore ."
   },
   "devDependencies": {
-    "eslint": "^4.17.0"
+    "eslint": "^4.17.0",
+    "json-stable-stringify": "^1.0.1",
+    "write-file-atomic": "^2.3.0"
   }
 }
