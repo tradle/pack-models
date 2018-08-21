@@ -22,10 +22,12 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
   if (!m  ||  !m.title || !id)
     debugger
   let mid = ['model', id, m.title].join('_')
-  if (currentIds[mid])
-    return
-
-  await addToDictionary({ dictionary, model, title: m.title, lang })
+  let newIds = {[mid]: true}
+  let hasChanged
+  if (!currentIds[mid]) {
+    hasChanged = true
+    await addToDictionary({ dictionary, model, title: m.title, lang })
+  }
   let props = m.properties
   for (let p in props) {
     if (p.charAt(0) === '_')
@@ -41,35 +43,14 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
       title = makeLabel(p)
       pid = [DEFAULT, p, title].join('_')
     }
+    newIds[pid] = true
     if (!currentIds[pid]) {
-      // if (hasOwnTitle) {
-        // if (!propNames[p][id]) {
-          await addToDictionary({dictionary, model: hasOwnTitle && model, propertyName: p, title, lang})
-          currentIds[pid] = true
-        // }
-      // }
-
-      continue
+      await addToDictionary({dictionary, model: hasOwnTitle && model, propertyName: p, title, lang})
+      currentIds[pid] = true
+      hasChanged = true
     }
-
-    // if (m.properties[p].title)
-    //   await addToDictionary({dictionary, model, propertyName: p, title: m.properties[p].title, lang})
-    // else
-    //   await addToDictionary({dictionary, propertyName: p, title: makeLabel(p), lang})
-/*
-    if (m.properties[p].type === 'array'  &&  m.properties[p].items.properties) {
-      let props = m.properties[p].items.properties
-      propNames[p].items = {}
-      for (let pp in props) {
-        let title = props[pp].title  ||  makeLabel(pp)
-        if (props[pp].title)
-          propNames[p].items[pp] = await translateText(props[pp].title, lang)
-        else
-          propNames[p].items[pp] = await translateText(makeLabel(pp), lang)
-      }
-    }
-*/
   }
+  return { changed: hasChanged, newIds }
 }
 async function addToDictionary({dictionary, model, propertyName, title, lang}) {
   let obj = {
@@ -88,8 +69,7 @@ async function writeDictionaries(modelsDir, lang) {
     return
   }
   let langs = lang.split(',')
-  for (let i=0; i<langs.length; i++)
-    await writeDictionary(modelsDir, langs[i])
+  await Promise.all(langs.map(lang => writeDictionary(modelsDir, lang)))
 }
 async function writeDictionary(modelsDir, lang) {
   let fn = './dictionary_' + lang + '.json'
@@ -122,7 +102,7 @@ async function writeDictionary(modelsDir, lang) {
   })
 
   let keys = Object.keys(models)
-  await Promise.all(keys.map(id => translateModel({
+  let result = await Promise.all(keys.map(id => translateModel({
     model: models[id],
     // propNames,
     lang,
@@ -130,7 +110,29 @@ async function writeDictionary(modelsDir, lang) {
     currentIds
   })), { concurrency: 20 })
 
-  writeFileAtomic(fn, JSON.stringify(dfile, 0, 2), console.log)
+  // Check if some models/props were deleted
+  let hasChanged
+  let newIds = {}
+  result.forEach(r => {
+    _.extend(newIds, r.newIds)
+    if (r.changed)
+      hasChanged = true
+  })
+  for (let p in currentIds) {
+    if (!newIds[p]) {
+      let parts = p.split('_')
+      let filter, idx
+      if (parts[0] === MODEL)
+        filter = {type: MODEL, name: parts[1], en: parts[2]}
+      else
+        filter = {model: parts[0], name: parts[1], en: parts[2]}
+      idx = _.findIndex(dfile, filter)
+      let rm = dfile.splice(idx, 1)
+      hasChanged = true
+    }
+  }
+  if (hasChanged)
+    writeFileAtomic(fn, JSON.stringify(dfile, 0, 2), console.log)
 }
 async function translateText(text, lang) {
   if (lang === 'en')
