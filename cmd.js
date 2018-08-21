@@ -2,7 +2,7 @@
 
 const path = require('path')
 const { merge, embedValues } = require('./index')
-const { writeDictionary } = require('./dictionary')
+const { writeDictionaries } = require('./dictionary')
 const HELP = `
   Usage:
 
@@ -43,7 +43,7 @@ const tasks = []
 
 if (dictionary) {
   console.log('generate dictionary: ' + dictionary)
-  tasks.push(writeDictionary(dictionary, language || 'en'))
+  tasks.push(writeDictionaries(dictionary, language || 'en'))
 }
 if (input && values) {
   console.log('embedding values')
