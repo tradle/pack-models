@@ -22,11 +22,19 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
   if (!m  ||  !m.title || !id)
     debugger
   let mid = ['model', id, m.title].join('_')
+
   let newIds = {[mid]: true}
+
   let hasChanged
   if (!currentIds[mid]) {
     hasChanged = true
-    await addToDictionary({ dictionary, model, title: m.title, lang })
+    let obj = await addToDictionary({ dictionary, model, title: m.title, lang })
+    if (m.enum) {
+      obj.enum = {}
+      m.enum.forEach(async ({id, title}) => {
+        obj.enum[id] = await translateText(title, lang)
+      })
+    }
   }
   let props = m.properties
   for (let p in props) {
@@ -45,9 +53,9 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
     }
     newIds[pid] = true
     if (!currentIds[pid]) {
-      await addToDictionary({dictionary, model: hasOwnTitle && model, propertyName: p, title, lang})
       currentIds[pid] = true
       hasChanged = true
+      await addToDictionary({dictionary, model: hasOwnTitle && model, propertyName: p, title, lang})
     }
   }
   return { changed: hasChanged, newIds }
@@ -62,6 +70,7 @@ async function addToDictionary({dictionary, model, propertyName, title, lang}) {
   if (propertyName)
     obj.model = model  &&  model.id || DEFAULT
   dictionary.push(obj)
+  return obj
 }
 async function writeDictionaries(modelsDir, lang) {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -94,7 +103,7 @@ async function writeDictionary(modelsDir, lang) {
 
   modelsDir = path.resolve(modelsDir)
 
-  let files = await fs.readdir(path.resolve(modelsDir))
+  let files = await fs.readdir(modelsDir)
   files = files.filter(file => /\.json$/.test(file))
 
   const models = files.map(file => {
@@ -131,8 +140,12 @@ async function writeDictionary(modelsDir, lang) {
       hasChanged = true
     }
   }
-  if (hasChanged)
+  if (hasChanged) {
+    dfile.sort((a, b) => {
+      return a.en > b.en
+    })
     writeFileAtomic(fn, JSON.stringify(dfile, 0, 2), console.log)
+  }
 }
 async function translateText(text, lang) {
   if (lang === 'en')
