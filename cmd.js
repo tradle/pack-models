@@ -14,7 +14,8 @@ const HELP = `
   --array, -a   export array of models instead of id->model map
   --values, -i  path/to/values directory (values to embed in models)
   --help, -h    see this menu again
-  --dictionary, -d generate dictionaries for models of this repository
+  --dictionary, -d  path/to/models directory
+  --languages, -l comma separated languages like: es,fr,fil,nl
 `
 
 const cwd = process.cwd()
@@ -25,7 +26,7 @@ const argv = require('minimist')(process.argv.slice(2), {
     v: 'values',
     h: 'help',
     d: 'dictionary',
-    l: 'language'
+    l: 'languages'
   },
   // default: {
   //   input: path.join(cwd, 'models'),
@@ -34,7 +35,7 @@ const argv = require('minimist')(process.argv.slice(2), {
   // }
 })
 
-const { input, output, values, help, dictionary, language, array } = argv
+const { input, output, values, help, dictionary, languages, array } = argv
 if (help) {
   console.log(HELP)
   process.exit(0)
@@ -43,7 +44,7 @@ const tasks = []
 
 if (dictionary) {
   console.log('generate dictionary: ' + dictionary)
-  tasks.push(writeDictionaries(dictionary, language || 'en'))
+  tasks.push(writeDictionaries(dictionary, languages || 'en'))
 }
 if (input && values) {
   console.log('embedding values')
