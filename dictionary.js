@@ -72,7 +72,7 @@ async function addToDictionary({dictionary, model, propertyName, title, lang}) {
   dictionary.push(obj)
   return obj
 }
-async function writeDictionaries(modelsDir, lang) {
+async function writeDictionaries(modelsDir, lang, newOnly) {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     console.log('Please set environment variable GOOGLE_APPLICATION_CREDENTIALS to allow models translation')
     return
@@ -92,12 +92,14 @@ async function writeDictionaries(modelsDir, lang) {
 
   // await Promise.all(langs.map(lang => writeDictionary(modelsDir, lang)))
 }
-async function writeDictionary(models, lang) {
+async function writeDictionary(models, lang, newOnly) {
   let fn = './dictionary_' + lang + '.json'
   let dfile
   let currentIds = {}
   try {
     dfile = require(path.resolve(fn))
+    if (newOnly)
+      return
     dfile.forEach(({ type, model, name, en }) => {
       let id
       if (type === MODEL)
@@ -152,7 +154,7 @@ async function writeDictionary(models, lang) {
       hasChanged = true
     }
   }
-  if (hasChanged) {
+  if (hasChanged  ||  newOnly) {
     dfile.sort((a, b) => {
       return a.en > b.en
     })
