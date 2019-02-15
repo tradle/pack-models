@@ -78,9 +78,21 @@ async function writeDictionaries(modelsDir, lang) {
     return
   }
   let langs = lang.split(',')
-  await Promise.all(langs.map(lang => writeDictionary(modelsDir, lang)))
+
+  modelsDir = path.resolve(modelsDir)
+
+  let files = await fs.readdir(modelsDir)
+  files = files.filter(file => /\.json$/.test(file))
+
+  const models = files.map(file => {
+    return require(path.join(modelsDir, file))
+  })
+
+  await Promise.all(langs.map(lang => writeDictionary(models, lang, newOnly)))
+
+  // await Promise.all(langs.map(lang => writeDictionary(modelsDir, lang)))
 }
-async function writeDictionary(modelsDir, lang) {
+async function writeDictionary(models, lang) {
   let fn = './dictionary_' + lang + '.json'
   let dfile
   let currentIds = {}
@@ -101,14 +113,14 @@ async function writeDictionary(modelsDir, lang) {
 
   // let appDictionary = await genDictionaryForApp(lang)
 
-  modelsDir = path.resolve(modelsDir)
+  // modelsDir = path.resolve(modelsDir)
 
-  let files = await fs.readdir(modelsDir)
-  files = files.filter(file => /\.json$/.test(file))
+  // let files = await fs.readdir(modelsDir)
+  // files = files.filter(file => /\.json$/.test(file))
 
-  const models = files.map(file => {
-    return require(path.join(modelsDir, file))
-  })
+  // const models = files.map(file => {
+  //   return require(path.join(modelsDir, file))
+  // })
 
   let keys = Object.keys(models)
   let result = await Promise.all(keys.map(id => translateModel({
