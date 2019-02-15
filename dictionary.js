@@ -77,7 +77,13 @@ async function writeDictionaries(modelsDir, lang, newOnly) {
     console.log('Please set environment variable GOOGLE_APPLICATION_CREDENTIALS to allow models translation')
     return
   }
-  let langs = lang.split(',')
+  let langs
+  if (lang  &&  lang !== 'en')
+    langs = lang.split(',')
+  else {
+    let [languages] = await translate.getLanguages()
+    langs = languages.map(l => l.code)
+  }
 
   modelsDir = path.resolve(modelsDir)
 
