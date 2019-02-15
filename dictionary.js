@@ -77,10 +77,11 @@ async function writeDictionaries(modelsDir, lang, newOnly) {
     console.log('Please set environment variable GOOGLE_APPLICATION_CREDENTIALS to allow models translation')
     return
   }
-  let langs
+  let langs, allLanguages
   if (lang  &&  lang !== 'en')
     langs = lang.split(',')
   else {
+    allLanguages = true
     let [languages] = await translate.getLanguages()
     langs = languages.map(l => l.code)
   }
@@ -93,10 +94,33 @@ async function writeDictionaries(modelsDir, lang, newOnly) {
   const models = files.map(file => {
     return require(path.join(modelsDir, file))
   })
-
-  await Promise.all(langs.map(lang => writeDictionary(models, lang, newOnly)))
-
-  // await Promise.all(langs.map(lang => writeDictionary(modelsDir, lang)))
+  let i = 0
+  let len = allLanguages ? 5 : langs.length
+  while (true) {
+    let newLangs = []
+    for (j=0; j<len  &&  i<langs.length; i++) {
+      let l = langs[i]
+      let fn = './dictionary_' + l + '.json'
+      let dfile = fs.existsSync(path.resolve(fn))
+      if (dfile) {
+        if (!newOnly) {
+          newLangs.push(l)
+          j++
+        }
+      }
+      else {
+        newLangs.push(l)
+        j++
+      }
+    }
+    await Promise.all(newLangs.map(lang => writeDictionary(models, lang, newOnly)))
+    if (i === langs.length)
+      break
+    await timeout(60000)
+  }
+}
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 async function writeDictionary(models, lang, newOnly) {
   let fn = './dictionary_' + lang + '.json'
@@ -116,6 +140,8 @@ async function writeDictionary(models, lang, newOnly) {
     })
   } catch (err) {
     console.log(err.message)
+    if (!newOnly)
+      newOnly = true
     dfile = []
   }
 
@@ -129,7 +155,7 @@ async function writeDictionary(models, lang, newOnly) {
   // const models = files.map(file => {
   //   return require(path.join(modelsDir, file))
   // })
-
+  console.log(`Translating to ${lang}`)
   let keys = Object.keys(models)
   let result = await Promise.all(keys.map(id => translateModel({
     model: models[id],
