@@ -15,7 +15,8 @@ const HELP = `
   --values, -i  path/to/values directory (values to embed in models)
   --help, -h    see this menu again
   --dictionary, -d  path/to/models directory
-  --languages, -l comma separated languages like: es,fr,fil,nl
+  --languages,  -l comma separated languages like: es,fr,fil,nl
+  --newOnly,    -n new languages only
 `
 
 const cwd = process.cwd()
@@ -26,7 +27,8 @@ const argv = require('minimist')(process.argv.slice(2), {
     v: 'values',
     h: 'help',
     d: 'dictionary',
-    l: 'languages'
+    l: 'languages',
+    n: 'newOnly'
   },
   // default: {
   //   input: path.join(cwd, 'models'),
@@ -35,7 +37,7 @@ const argv = require('minimist')(process.argv.slice(2), {
   // }
 })
 
-const { input, output, values, help, dictionary, languages, array } = argv
+const { input, output, values, help, dictionary, languages, array, newOnly } = argv
 if (help) {
   console.log(HELP)
   process.exit(0)
@@ -44,7 +46,7 @@ const tasks = []
 
 if (dictionary) {
   console.log('generate dictionary: ' + dictionary)
-  tasks.push(writeDictionaries(dictionary, languages || 'en'))
+  tasks.push(writeDictionaries(dictionary, languages || 'en', newOnly))
 }
 if (input && values) {
   console.log('embedding values')
