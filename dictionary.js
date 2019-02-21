@@ -102,13 +102,12 @@ async function writeDictionary({models, lang, newOnly, dir}) {
   else
     fn = `.${fn}`
   let dfile
-  let currentIds = {}
-  var params1 = {
+  var paramsGet = {
     Bucket: BUCKET,
     Key: `${DICTIONARIES_FOLDER}${fn}`,
    };
   try {
-    let res = await s3.getObject(params1).promise()
+    let res = await s3.getObject(paramsGet).promise()
     dfile = JSON.parse(Buffer.from(res.Body).toString('utf8'))
     if (dfile  && newOnly)
       return
@@ -124,6 +123,7 @@ async function writeDictionary({models, lang, newOnly, dir}) {
     dfile = []
   }
 
+  let currentIds = {}
   dfile.forEach(({ type, model, name, en, description }) => {
     let id
     if (type === MODEL)
@@ -171,13 +171,13 @@ async function writeDictionary({models, lang, newOnly, dir}) {
     return a.en > b.en
   })
 
-  var params = {
+  var paramsPut = {
     Body: Buffer.from(JSON.stringify(dfile, 0, 2)),
     Bucket: BUCKET,
     Key: `${DICTIONARIES_FOLDER}${fn}`,
     ACL: 'public-read'
    };
-   s3.putObject(params, function(err, data) {
+   s3.putObject(paramsPut, function(err, data) {
      if (err)
        console.log(err, err.stack); // an error occurred
      else
