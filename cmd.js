@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const path = require('path')
 const { merge, embedValues } = require('./index')
 const { writeDictionaries } = require('./dictionary')
 const HELP = `
@@ -28,13 +27,8 @@ const argv = require('minimist')(process.argv.slice(2), {
     h: 'help',
     d: 'dictionary',
     l: 'languages',
-    n: 'newOnly'
+    n: 'newOnly',
   },
-  // default: {
-  //   input: path.join(cwd, 'models'),
-  //   output: path.join(cwd, 'models.js'),
-  //   values: path.join(cwd, 'values')
-  // }
 })
 
 const { input, output, values, help, dictionary, languages, array, newOnly } = argv
@@ -46,7 +40,7 @@ const tasks = []
 
 if (dictionary) {
   console.log('generate dictionary: ' + dictionary)
-  tasks.push(writeDictionaries(dictionary, languages || 'en', newOnly))
+  tasks.push(writeDictionaries({modelsDir: dictionary, lang: languages || 'en', newOnly}))
 }
 if (input && values) {
   console.log('embedding values')

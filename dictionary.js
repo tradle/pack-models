@@ -3,17 +3,187 @@ const path = require('path')
 const pify = require('pify')
 const fs = pify(require('fs'))
 const _ = require('lodash')
-const writeFileAtomic = require('write-file-atomic')
-const stableStringify = require('json-stable-stringify')
 const Translate = require('@google-cloud/translate')
+const aws = require('aws-sdk')
+const s3ls = require('s3-ls');
 
 const MODEL = 'model'
 const PROPERTY_NAME = 'propertyName'
 const DEFAULT = 'Default'
+const MAX_LANGUAGES_IN_ONE_SHOT = 1
+const BUCKET = 'tradle.io'
+const DICTIONARIES_FOLDER = 'dictionaries/'
 
 module.exports = { writeDictionary, writeDictionaries }
 
 const translate = new Translate();
+var s3 = new aws.S3()
+aws.config.setPromisesDependency(Promise);
+
+async function writeDictionaries({modelsDir, lang, newOnly, all}) {
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    console.log('Please set environment variable GOOGLE_APPLICATION_CREDENTIALS to allow models translation')
+    return
+  }
+  if (!process.env.AWS_PROFILE) {
+    console.log('Please check if you use the correct AWS_PROFILE')
+    return
+  }
+  let langs, allLanguages
+  if (lang  &&  lang !== 'en')
+    langs = lang.split(',')
+  else {
+    allLanguages = true
+    let [languages] = await translate.getLanguages()
+    langs = languages.map(l => l.code)
+  }
+
+  modelsDir = path.resolve(modelsDir)
+  let models
+  let parts = modelsDir.split('/')
+  let dir = parts[parts.length - 2]
+  if (modelsDir.indexOf('.json') === -1) {
+    let files = await fs.readdir(modelsDir)
+    files = files.filter(file => /\.json$/.test(file))
+
+    models = files.map(file => {
+      return require(path.join(modelsDir, file))
+    })
+  }
+  else {
+    let ddir = path.resolve(dir)
+    if (!fs.existsSync(ddir))
+      fs.mkdirSync(ddir)
+    models = require(modelsDir)
+  }
+  let len
+  if (langs.length > MAX_LANGUAGES_IN_ONE_SHOT)
+    len = MAX_LANGUAGES_IN_ONE_SHOT
+  else
+    len = langs.length
+
+  let lister = s3ls({bucket: BUCKET});
+  let folder = `${DICTIONARIES_FOLDER}${dir}/`
+  let fileNames
+  try {
+    let data = await lister.ls(folder)
+    fileNames = data.files
+  } catch (err) {
+    console.log(err.message, err.stack)
+    return
+  }
+
+  let i = 0
+  while (true) {
+    let newLangs = []
+    for (j=0; j<len  &&  i<langs.length; i++) {
+      let l = langs[i]
+      let fn = `${folder}dictionary_${l}.json`
+      if (newOnly  &&  fileNames.includes(fn))
+        continue
+
+      newLangs.push(l)
+      j++
+    }
+    await Promise.all(newLangs.map(lang => writeDictionary({models, lang, newOnly, dir})))
+    if (i === langs.length)
+      break
+    await timeout(60000)
+  }
+}
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function writeDictionary({models, lang, newOnly, dir}) {
+  let fn = `/dictionary_${lang}.json`
+  if (dir)
+    fn = `${dir}${fn}`
+  else
+    fn = `.${fn}`
+  let dfile
+  let currentIds = {}
+  var params1 = {
+    Bucket: BUCKET,
+    Key: `${DICTIONARIES_FOLDER}${fn}`,
+   };
+  try {
+    let res = await s3.getObject(params1).promise()
+    dfile = JSON.parse(Buffer.from(res.Body).toString('utf8'))
+    if (dfile  && newOnly)
+      return
+    if (!dfile)
+      dfile = []
+  } catch (err) {
+    console.log(err.message)
+    if (err.statusCode !== 404)
+      return
+
+    if (!newOnly)
+      newOnly = true
+    dfile = []
+  }
+
+  dfile.forEach(({ type, model, name, en, description }) => {
+    let id
+    if (type === MODEL)
+      id = [type, name, en].join('_')
+    else
+      id = [model, name, en].join('_')
+    if (description)
+      id += `_${description}`
+    currentIds[id] = true
+  })
+
+  console.log(`Translating to ${lang}`)
+  let keys = Object.keys(models)
+  let result = await Promise.all(keys.map(id => translateModel({
+    model: models[id],
+    lang,
+    dictionary: dfile,
+    currentIds
+  })), { concurrency: 20 })
+
+  // Check if some models/props were deleted
+  let hasChanged
+  let newIds = {}
+  result.forEach(r => {
+    _.extend(newIds, r.newIds)
+    if (r.changed)
+      hasChanged = true
+  })
+  for (let p in currentIds) {
+    if (newIds[p])
+      continue
+    let parts = p.split('_')
+    let filter, idx
+    if (parts[0] === MODEL)
+      filter = {type: MODEL, name: parts[1], en: parts[2]}
+    else
+      filter = {model: parts[0], name: parts[1], en: parts[2]}
+    idx = _.findIndex(dfile, filter)
+    let rm = dfile.splice(idx, 1)
+    hasChanged = true
+  }
+  if (!hasChanged  &&  !newOnly)
+    return
+  dfile.sort((a, b) => {
+    return a.en > b.en
+  })
+
+  var params = {
+    Body: Buffer.from(JSON.stringify(dfile, 0, 2)),
+    Bucket: BUCKET,
+    Key: `${DICTIONARIES_FOLDER}${fn}`,
+    ACL: 'public-read'
+   };
+   s3.putObject(params, function(err, data) {
+     if (err)
+       console.log(err, err.stack); // an error occurred
+     else
+       console.log(data);           // successful response
+   });
+}
 
 const translateModel = async ({ model, dictionary, lang, currentIds }) => {
   const m = model
@@ -41,26 +211,32 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
     if (p.charAt(0) === '_')
       continue
 
-    let title = props[p].title
-    let pid, hasOwnTitle
+    let { title, description } = props[p]
+    let pid, notDefault
     if (title) {
       pid = [id, p, title].join('_')
-      hasOwnTitle = true
+      notDefault = true
+      if (description)
+        pid += `_${description}`
     }
     else {
       title = makeLabel(p)
-      pid = [DEFAULT, p, title].join('_')
+      pid = [description &&  id || DEFAULT, p, title].join('_')
+      if (description) {
+        notDefault = true
+        pid += `_${description}`
+      }
     }
     newIds[pid] = true
     if (!currentIds[pid]) {
       currentIds[pid] = true
       hasChanged = true
-      await addToDictionary({dictionary, model: hasOwnTitle && model, propertyName: p, title, lang})
+      await addToDictionary({dictionary, model: notDefault && model, propertyName: p, description, title, lang})
     }
   }
   return { changed: hasChanged, newIds }
 }
-async function addToDictionary({dictionary, model, propertyName, title, lang}) {
+async function addToDictionary({dictionary, model, propertyName, title, description, lang}) {
   let obj = {
     [lang]: await translateText(title, lang),
     en: title,
@@ -69,136 +245,17 @@ async function addToDictionary({dictionary, model, propertyName, title, lang}) {
   }
   if (propertyName)
     obj.model = model  &&  model.id || DEFAULT
+  if (description)
+    obj.description = await translateText(description, lang)
   dictionary.push(obj)
   return obj
-}
-async function writeDictionaries(modelsDir, lang, newOnly) {
-  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    console.log('Please set environment variable GOOGLE_APPLICATION_CREDENTIALS to allow models translation')
-    return
-  }
-  let langs, allLanguages
-  if (lang  &&  lang !== 'en')
-    langs = lang.split(',')
-  else {
-    allLanguages = true
-    let [languages] = await translate.getLanguages()
-    langs = languages.map(l => l.code)
-  }
-
-  modelsDir = path.resolve(modelsDir)
-
-  let files = await fs.readdir(modelsDir)
-  files = files.filter(file => /\.json$/.test(file))
-
-  const models = files.map(file => {
-    return require(path.join(modelsDir, file))
-  })
-  let i = 0
-  let len = allLanguages ? 5 : langs.length
-  while (true) {
-    let newLangs = []
-    for (j=0; j<len  &&  i<langs.length; i++) {
-      let l = langs[i]
-      let fn = './dictionary_' + l + '.json'
-      let dfile = fs.existsSync(path.resolve(fn))
-      if (dfile) {
-        if (!newOnly) {
-          newLangs.push(l)
-          j++
-        }
-      }
-      else {
-        newLangs.push(l)
-        j++
-      }
-    }
-    await Promise.all(newLangs.map(lang => writeDictionary(models, lang, newOnly)))
-    if (i === langs.length)
-      break
-    await timeout(60000)
-  }
-}
-function timeout(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-async function writeDictionary(models, lang, newOnly) {
-  let fn = './dictionary_' + lang + '.json'
-  let dfile
-  let currentIds = {}
-  try {
-    dfile = require(path.resolve(fn))
-    if (newOnly)
-      return
-    dfile.forEach(({ type, model, name, en }) => {
-      let id
-      if (type === MODEL)
-        id = [type,name,en].join('_')
-      else
-        id = [model, name, en].join('_')
-      currentIds[id] = true
-    })
-  } catch (err) {
-    console.log(err.message)
-    if (!newOnly)
-      newOnly = true
-    dfile = []
-  }
-
-  // let appDictionary = await genDictionaryForApp(lang)
-
-  // modelsDir = path.resolve(modelsDir)
-
-  // let files = await fs.readdir(modelsDir)
-  // files = files.filter(file => /\.json$/.test(file))
-
-  // const models = files.map(file => {
-  //   return require(path.join(modelsDir, file))
-  // })
-  console.log(`Translating to ${lang}`)
-  let keys = Object.keys(models)
-  let result = await Promise.all(keys.map(id => translateModel({
-    model: models[id],
-    // propNames,
-    lang,
-    dictionary: dfile,
-    currentIds
-  })), { concurrency: 20 })
-
-  // Check if some models/props were deleted
-  let hasChanged
-  let newIds = {}
-  result.forEach(r => {
-    _.extend(newIds, r.newIds)
-    if (r.changed)
-      hasChanged = true
-  })
-  for (let p in currentIds) {
-    if (!newIds[p]) {
-      let parts = p.split('_')
-      let filter, idx
-      if (parts[0] === MODEL)
-        filter = {type: MODEL, name: parts[1], en: parts[2]}
-      else
-        filter = {model: parts[0], name: parts[1], en: parts[2]}
-      idx = _.findIndex(dfile, filter)
-      let rm = dfile.splice(idx, 1)
-      hasChanged = true
-    }
-  }
-  if (hasChanged  ||  newOnly) {
-    dfile.sort((a, b) => {
-      return a.en > b.en
-    })
-    writeFileAtomic(fn, JSON.stringify(dfile, 0, 2), console.log)
-  }
 }
 async function translateText(text, lang) {
   if (lang === 'en')
     return text
-  // return text
   const results = await translate.translate(text, lang)
-  const translations = results[0];
+  let translations = results[0];
+  translations =  translations.charAt(0).toUpperCase() + translations.slice(1)
   return Array.isArray(translations) ? translations[0] : translations
 }
 
@@ -210,47 +267,3 @@ function makeLabel(label) {
         .replace(/^./, str => str.toUpperCase())
 }
 
-// function printUsage () {
-//   console.log(function () {
-//   `
-//   Usage:
-//   Options:
-//       -h, --help              print usage
-//       -f, --file              file path where the model resides
-//       -m, --model             model json object. Verifies everyhing except references
-//       -r, --references        the array of models for which to check the references
-//   `
-//   }.toString()
-//   .split(/\n/)
-//   .slice(2, -2)
-//   .join('\n'))
-
-//   process.exit(0)
-// }
-// async function genDictionaryForApp(lang) {
-//   let fn = './dictionary_' + lang + '.json'
-//   let dfile
-//   try {
-//     dfile = require(fn)
-//   } catch (err) {
-//     console("there is not file: ", err)
-//     return
-//   }
-//   let groups = _.groupBy(dfile, 'type')
-//   let models = groups[MODEL]
-//   let properties = groups[PROPERTY_NAME]
-//   let dmodels = {}
-//   models.forEach(m => dmodels[m.name] = m[lang])
-//   let dprops = {}
-//   properties.forEach(p => {
-//     if (!dprops[p.name])
-//       dprops[p.name] = {}
-//     dprops[p.name][p.model] = p[lang]
-//   })
-//   let dictionary = {
-//     models: dmodels,
-//     properties: dprops
-//   }
-//   let outputFn = './dictionaryApp_' + lang + '.json'
-//   writeFileAtomic(outputFn, stableStringify(dictionary, { space: '  ' }), console.log)
-// }
