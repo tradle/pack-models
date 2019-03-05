@@ -96,7 +96,7 @@ function timeout(ms) {
 }
 
 async function writeDictionary({models, lang, newOnly, dir}) {
-  let fn = `/dictionary_${lang}.json`
+  let fn = `/dictionary_${lang.replace('-', '')}.json`
   if (dir)
     fn = `${dir}${fn}`
   else
