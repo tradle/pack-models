@@ -130,8 +130,8 @@ async function writeDictionary({models, lang, newOnly, dir}) {
       id = [type, name, en].join('_')
     else
       id = [model, name, en].join('_')
-    if (description)
-      id += `_${description}`
+    // if (description)
+    //   id += `_${description}`
     currentIds[id] = true
   })
 
@@ -216,15 +216,15 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
     if (title) {
       pid = [id, p, title].join('_')
       notDefault = true
-      if (description)
-        pid += `_${description}`
+      // if (description)
+      //   pid += `_${description}`
     }
     else {
       title = makeLabel(p)
       pid = [description &&  id || DEFAULT, p, title].join('_')
       if (description) {
         notDefault = true
-        pid += `_${description}`
+        // pid += `_${description}`
       }
     }
     newIds[pid] = true
