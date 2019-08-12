@@ -95,10 +95,10 @@ function prettify (obj) {
 
 function genModelsFile (models) {
   const getters = models.map(
-    ({ id, relPath }) => `\nget ['${id}']() { return require('./${relPath}') }`
+    ({ id, relPath }) => `  get ['${id}']() { return require('./${relPath}') }`
   )
 
   return `const models = module.exports = {
-${getters.join(',')}
+${getters.join(',\n')}
 }`
 }
