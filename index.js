@@ -1,4 +1,3 @@
-
 const path = require('path')
 const pify = require('pify')
 const fs = pify(require('fs'))
@@ -12,10 +11,12 @@ module.exports = { split, merge, embedValues }
 
 function split (models, dir) {
   dir = path.resolve(dir)
-  return Promise.all(models.map(function (m) {
+  return Promise.all(
+    models.map((m) => {
     const fname = toFilePath(dir, m.id)
     return fs.writeFile(path.resolve(fname), prettify(m))
-  }))
+    })
+  )
 }
 
 function embedValues (modelsDir, valuesDir) {
@@ -23,7 +24,7 @@ function embedValues (modelsDir, valuesDir) {
   const finder = findit(valuesDir)
   const edits = {}
   const promises = []
-  finder.on('file', function (file) {
+  finder.on('file', (file) => {
     const relativePath = file.slice(valuesDir.length + path.sep.length)
     const parsed = parseValueFileName(relativePath)
     if (!parsed) return
@@ -33,7 +34,7 @@ function embedValues (modelsDir, valuesDir) {
     const model = edits[modelFile] || require(path.resolve(modelFile))
     edits[modelFile] = model
 
-    const setValue = fs.readFile(file, { encoding: 'utf8' }).then(value => {
+    const setValue = fs.readFile(file, { encoding: 'utf8' }).then((value) => {
       dotProp.set(model, propPath, value)
     })
 
@@ -41,10 +42,10 @@ function embedValues (modelsDir, valuesDir) {
   })
 
   return new Promise((resolve, reject) => {
-    finder.once('end', function () {
+    finder.once('end', () => {
       Promise.all(promises)
         .then(() => {
-          return Object.keys(edits).map(file => {
+          return Object.keys(edits).map((file) => {
             return fs.writeFile(file, prettify(edits[file]))
           })
         })
@@ -62,38 +63,28 @@ function merge (modelsDir, outFilePath, toArray) {
   outFilePath = path.resolve(outFilePath)
   modelsDir = path.resolve(modelsDir)
   const outDir = path.dirname(outFilePath)
-  return fs.readdir(path.resolve(modelsDir))
-    .then(files => {
-      files = files.filter(file => /\.json$/.test(file))
+  return fs.readdir(path.resolve(modelsDir)).then((files) => {
+    files = files.filter((file) => (/\.json$/).test(file))
 
-      const models = files
-        .map(file => require(path.join(modelsDir, file)))
+    const models = files.map((file) => ({
+      id: path.basename(file, '.json'),
+      relPath: path.relative(outDir, path.join(modelsDir, file))
+    }))
 
-      let contents
-      if (toArray) {
-        contents = genModelsFile(models)
-      } else {
-        const byId = {}
-        for (const model of models) {
-          byId[model.id] = model
-        }
-
-        contents = genModelsFile(byId)
-      }
-
+    const contents = genModelsFile(models)
       return fs.writeFile(outFilePath, contents)
     })
 }
 
 function toFilePath (dir, id) {
-  return path.join(dir, id + '.json')
+  return path.join(dir, `${id}.json`)
 }
 
 function parseValueFileName (file) {
   const result = VALUE_FILENAME_REGEX.exec(file)
-  if (!result) return
+  if (!result) return null
 
-  const [ignore, modelId, propPath] = result
+  const [modelId, propPath] = result.slice(1)
   return {
     modelId,
     propPath
@@ -105,5 +96,11 @@ function prettify (obj) {
 }
 
 function genModelsFile (models) {
-  return JSON.stringify(models)
+  const getters = models.map(
+    ({ id, relPath }) => `\nget ['${id}']() { return require('./${relPath}') }`
+  )
+
+  return `const models = module.exports = {
+${getters.join(',')}
+}`
 }
