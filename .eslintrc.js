@@ -26,7 +26,7 @@ module.exports = {
     camelcase: 'error',
     'capitalized-comments': 'error',
     'class-methods-use-this': 'error',
-    'comma-dangle': 'error',
+    'comma-dangle': 'warn',
     'comma-spacing': [
       'error',
       {
@@ -50,7 +50,6 @@ module.exports = {
     'func-names': 'error',
     'func-style': 'off',
     'generator-star-spacing': 'error',
-    'global-require': 'error',
     'guard-for-in': 'error',
     'handle-callback-err': 'error',
     'id-blacklist': 'error',

@@ -1,8 +1,6 @@
 const path = require('path')
 const pify = require('pify')
 const fs = pify(require('fs'))
-const proc = require('child_process')
-const exec = pify(proc.exec.bind(proc))
 const findit = require('findit')
 const dotProp = require('dot-prop')
 const VALUE_FILENAME_REGEX = /^([^/]+)\/(.*?)\.[^.]+$/
@@ -54,7 +52,7 @@ function embedValues (modelsDir, valuesDir) {
   })
 }
 
-function merge (modelsDir, outFilePath, toArray) {
+function merge (modelsDir, outFilePath) {
   if (typeof outFilePath === 'undefined') {
     outFilePath = modelsDir
     modelsDir = null
