@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* eslint-disable no-console,max-len,no-process-exit */
+
 const { merge, embedValues } = require('./index')
 const { writeDictionaries } = require('./dictionary')
 const HELP = `
@@ -18,7 +20,6 @@ const HELP = `
   --newOnly,    -n new languages only
 `
 
-const cwd = process.cwd()
 const argv = require('minimist')(process.argv.slice(2), {
   alias: {
     i: 'input',
@@ -27,8 +28,8 @@ const argv = require('minimist')(process.argv.slice(2), {
     h: 'help',
     d: 'dictionary',
     l: 'languages',
-    n: 'newOnly',
-  },
+    n: 'newOnly'
+  }
 })
 
 const { input, output, values, help, dictionary, languages, array, newOnly } = argv
@@ -39,8 +40,8 @@ if (help) {
 const tasks = []
 
 if (dictionary) {
-  console.log('generate dictionary: ' + dictionary)
-  tasks.push(writeDictionaries({modelsDir: dictionary, lang: languages || 'en', newOnly}))
+  console.log(`generate dictionary: ${dictionary}`)
+  tasks.push(writeDictionaries({ modelsDir: dictionary, lang: languages || 'en', newOnly }))
 }
 if (input && values) {
   console.log('embedding values')
@@ -52,7 +53,7 @@ if (input && output) {
   tasks.push(merge(input, output, array))
 }
 
-Promise.all(tasks).catch(err => {
+Promise.all(tasks).catch((err) => {
   console.error(err.stack)
   process.exitCode = 1
 })
