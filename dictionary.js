@@ -206,6 +206,18 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
       })
     }
   }
+  else if (m.enum) {
+    let idx = dictionary.findIndex(r => r.type === 'model'  &&  r.name === m.id)
+    let obj = dictionary[idx]
+    if (obj.enum.length !== m.enum.length) {
+      hasChanged = true
+      for (let i=0; i<m.enum.length; i++) {
+        let { id, title } = m.enum[i]
+        if (!obj.enum[id])
+          obj.enum[id] = await translateText(title, lang)
+      }
+    }
+  }
   let props = m.properties
   for (let p in props) {
     if (p.charAt(0) === '_')
