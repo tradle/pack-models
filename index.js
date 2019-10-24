@@ -64,10 +64,13 @@ function merge (modelsDir, outFilePath) {
   return fs.readdir(path.resolve(modelsDir)).then((files) => {
     files = files.filter((file) => (/\.json$/).test(file))
 
-    const models = files.map((file) => ({
-      id: path.basename(file, '.json'),
-      relPath: path.relative(outDir, path.join(modelsDir, file))
-    }))
+    const models = files.map(file => {
+      let model = require(path.join(modelsDir, file))
+      return {
+        id: model.id,
+        relPath: path.relative(outDir, path.join(modelsDir, file))
+      }
+    })
 
     const contents = genModelsFile(models)
       return fs.writeFile(outFilePath, contents)
