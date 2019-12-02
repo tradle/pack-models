@@ -30,7 +30,7 @@ async function writeDictionaries({modelsDir, lang, newOnly, all}) {
     return
   }
   let langs, allLanguages
-  if (lang  &&  lang !== 'en')
+  if (lang) //  &&  lang !== 'en')
     langs = lang.split(',')
   else {
     allLanguages = true
