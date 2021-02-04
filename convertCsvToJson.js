@@ -20,13 +20,25 @@ var s3 = new aws.S3()
 aws.config.setPromisesDependency(Promise);
 
 async function convertToJson({file, lang}) {
-  lang = lang || file.split('.')[0].split('_')[1]
+  if (!lang) {
+    let parts = file.split('.')
+    if (parts.length !== 2  ||  parts[1].toLowerCase() !== 'csv') {
+      console.log('the -f options should pass CSV file with ".cvs" extension')
+      return
+    }
+
+    let fnParts = parts[0].split('_')
+    if (fnParts.length < 2) {
+      console.log('file name should be like dictionary_es.csv. The _es is for language')
+      return
+    }
+    lang = fnParts[1]
+  }
   file = path.resolve(file)
 
   let lines = fs.readFileSync(file, { encoding: 'utf8' })
     .toString()
     .split('\n')
-
 
   let headers=lines[0].split(",").map(h => h.charAt(0) === '"' ? h.slice(1, -1) : h)
 
