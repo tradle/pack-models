@@ -4,6 +4,7 @@
 
 const { merge, embedValues } = require('./index')
 const { writeDictionaries } = require('./dictionary')
+const { convertToJson } = require('./convertCsvToJson')
 const HELP = `
   Usage:
 
@@ -18,6 +19,7 @@ const HELP = `
   --dictionary, -d  path/to/models directory
   --languages,  -l comma separated languages like: es,fr,fil,nl
   --newOnly,    -n new languages only
+  --file,       -f convertToJson
 `
 
 const argv = require('minimist')(process.argv.slice(2), {
@@ -28,11 +30,12 @@ const argv = require('minimist')(process.argv.slice(2), {
     h: 'help',
     d: 'dictionary',
     l: 'languages',
-    n: 'newOnly'
+    n: 'newOnly',
+    f: 'file'
   }
 })
 
-const { input, output, values, help, dictionary, languages, array, newOnly } = argv
+const { input, output, values, help, dictionary, languages, file, array, newOnly } = argv
 if (help) {
   console.log(HELP)
   process.exit(0)
@@ -42,6 +45,10 @@ const tasks = []
 if (dictionary) {
   console.log(`generate dictionary: ${dictionary}`)
   tasks.push(writeDictionaries({ modelsDir: dictionary, lang: languages || 'en', newOnly }))
+}
+if (file) {
+  console.log(`generate dictionary: ${dictionary}`)
+  tasks.push(convertToJson({ file, lang: languages }))
 }
 if (input && values) {
   console.log('embedding values')
