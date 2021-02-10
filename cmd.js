@@ -6,7 +6,7 @@ const { merge, embedValues } = require('./index')
 const { writeDictionaries } = require('./dictionary')
 const { convertToJson } = require('./convertCsvToJson')
 const HELP = `
-  Usage:
+  Usages:
 
   build-models --input ./models --output ./models.js --values ./values
 
@@ -42,13 +42,17 @@ if (help) {
 }
 const tasks = []
 
+if (file) {
+  if (!dictionary) {
+    console.log('\'dictionary\' should be passed for converting to JSON')
+    process.exit(0)
+  }
+  console.log(`generate dictionary: ${dictionary}`)
+  tasks.push(convertToJson({ modelsDir: dictionary, file, lang: languages }))
+}
 if (dictionary) {
   console.log(`generate dictionary: ${dictionary}`)
   tasks.push(writeDictionaries({ modelsDir: dictionary, lang: languages || 'en', newOnly }))
-}
-if (file) {
-  console.log(`generate dictionary: ${dictionary}`)
-  tasks.push(convertToJson({ file, lang: languages }))
 }
 if (input && values) {
   console.log('embedding values')
