@@ -20,7 +20,7 @@ const translate = new Translate();
 var s3 = new aws.S3()
 aws.config.setPromisesDependency(Promise);
 
-async function writeDictionaries({modelsDir, lang, newOnly, all}) {
+async function writeDictionaries({modelsDir, lang, newOnly, all, domain}) {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     console.log('Please set environment variable GOOGLE_APPLICATION_CREDENTIALS to allow models translation')
     return
@@ -62,8 +62,9 @@ async function writeDictionaries({modelsDir, lang, newOnly, all}) {
   else
     len = langs.length
 
+  let s3Dir = (domain && domain.split('.')[0]) ?? dir
   let lister = s3ls({bucket: BUCKET});
-  let folder = `${DICTIONARIES_FOLDER}${dir}/`
+  let folder = `${DICTIONARIES_FOLDER}${s3Dir}/`
   let fileNames
   try {
     let data = await lister.ls(folder)
@@ -85,7 +86,7 @@ async function writeDictionaries({modelsDir, lang, newOnly, all}) {
       newLangs.push(l)
       j++
     }
-    await Promise.all(newLangs.map(lang => writeDictionary({models, lang, newOnly, dir})))
+    await Promise.all(newLangs.map(lang => writeDictionary({models, lang, newOnly, dir: s3Dir})))
     if (i === langs.length)
       break
     await timeout(60000)
@@ -223,7 +224,7 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
     if (p.charAt(0) === '_')
       continue
 
-    let { title, description } = props[p]
+    let { title, description, units } = props[p]
     let pid, notDefault
     if (title) {
       pid = [id, p, title].join('_')
@@ -243,12 +244,12 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
     if (!currentIds[pid]) {
       currentIds[pid] = true
       hasChanged = true
-      await addToDictionary({dictionary, model: notDefault && model, propertyName: p, description, title, lang})
+      await addToDictionary({dictionary, model: notDefault && model, propertyName: p, description, units, title, lang})
     }
   }
   return { changed: hasChanged, newIds }
 }
-async function addToDictionary({dictionary, model, propertyName, title, description, lang}) {
+async function addToDictionary({dictionary, model, propertyName, title, description, units, lang}) {
   let obj = {
     [lang]: await translateText(title, lang),
     en: title,
@@ -259,6 +260,8 @@ async function addToDictionary({dictionary, model, propertyName, title, descript
     obj.model = model  &&  model.id || DEFAULT
   if (description)
     obj.description = await translateText(description, lang)
+  if (units)
+    obj.units = await translateText(units, lang)
   dictionary.push(obj)
   return obj
 }

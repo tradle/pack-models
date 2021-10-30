@@ -20,6 +20,7 @@ const HELP = `
   --languages,  -l comma separated languages like: es,fr,fil,nl
   --newOnly,    -n new languages only
   --file,       -f convertToJson
+  --domain,     -m dictionary domain
 `
 
 const argv = require('minimist')(process.argv.slice(2), {
@@ -31,11 +32,12 @@ const argv = require('minimist')(process.argv.slice(2), {
     d: 'dictionary',
     l: 'languages',
     n: 'newOnly',
-    f: 'file'
+    f: 'file',
+    m: 'domain'
   }
 })
 
-const { input, output, values, help, dictionary, languages, file, array, newOnly } = argv
+const { input, output, values, help, dictionary, languages, file, array, newOnly, domain } = argv
 if (help) {
   console.log(HELP)
   process.exit(0)
@@ -52,7 +54,7 @@ if (file) {
 }
 if (dictionary) {
   console.log(`generate dictionary: ${dictionary}`)
-  tasks.push(writeDictionaries({ modelsDir: dictionary, lang: languages || 'en', newOnly }))
+  tasks.push(writeDictionaries({ modelsDir: dictionary, lang: languages || 'en', newOnly, domain }))
 }
 if (input && values) {
   console.log('embedding values')
