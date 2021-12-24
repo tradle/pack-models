@@ -5,7 +5,7 @@ const path = require('path')
 const pify = require('pify')
 const fs = pify(require('fs'))
 const _ = require('lodash')
-const Translate = require('@google-cloud/translate')
+const { Translate } = require('@google-cloud/translate').v2
 const aws = require('aws-sdk')
 const s3ls = require('s3-ls')
 
