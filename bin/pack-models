@@ -13,16 +13,16 @@ Usage:
 
 Options:
 
-  --input, -i   path/to/models directory
-  --output, -o  path/to/models.js output file
-  --array, -a   export array of models instead of id->model map
-  --values, -i  path/to/values directory (values to embed in models)
-  --help, -h    see this menu again
-  --dictionary, -d  path/to/models directory
-  --languages,  -l comma separated languages like: es,fr,fil,nl
-  --newOnly,    -n new languages only
-  --file,       -f convertToJson
-  --domain,     -m dictionary domain
+  --input, -i      path/to/models directory
+  --output, -o     path/to/models.js output file
+  --array, -a      export array of models instead of id->model map
+  --values, -i     path/to/values directory (values to embed in models)
+  --help, -h       see this menu again
+  --dictionary, -d path/to/models directory
+  --languages, -l  comma separated languages like: es,fr,fil,nl
+  --newOnly, -n    new languages only
+  --file, -f       convertToJson
+  --domain, -m     dictionary domain
 
 ${name}@${version}
 `
