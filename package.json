@@ -1,6 +1,6 @@
 {
   "name": "@tradle/pack-models",
-  "version": "4.0.6",
+  "version": "4.0.7",
   "description": "package data models, interpolate values, etc.",
   "main": "index.js",
   "bin": {
