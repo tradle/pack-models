@@ -3,7 +3,7 @@ module.exports = {
     browser: true,
     commonjs: true,
     es6: true,
-    node: true,
+    node: true
   },
   parserOptions: {
     ecmaVersion: 9
@@ -19,8 +19,8 @@ module.exports = {
       'error',
       {
         after: true,
-        before: true,
-      },
+        before: true
+      }
     ],
     'block-scoped-var': 'error',
     'block-spacing': 'error',
@@ -34,8 +34,8 @@ module.exports = {
       'error',
       {
         after: true,
-        before: false,
-      },
+        before: false
+      }
     ],
     'comma-style': ['error', 'last'],
     'computed-property-spacing': ['error', 'never'],
@@ -65,8 +65,8 @@ module.exports = {
       'error',
       {
         after: true,
-        before: true,
-      },
+        before: true
+      }
     ],
     'line-comment-position': 'error',
     'linebreak-style': ['error', 'unix'],
@@ -219,6 +219,6 @@ module.exports = {
     'wrap-iife': 'error',
     'wrap-regex': 'error',
     'yield-star-spacing': 'error',
-    yoda: 'error',
-  },
+    yoda: 'error'
+  }
 }
