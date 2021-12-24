@@ -5,6 +5,9 @@ module.exports = {
     es6: true,
     node: true,
   },
+  parserOptions: {
+    ecmaVersion: 9
+  },
   extends: 'eslint:recommended',
   rules: {
     'accessor-pairs': 'error',
@@ -35,7 +38,6 @@ module.exports = {
       },
     ],
     'comma-style': ['error', 'last'],
-    complexity: 'error',
     'computed-property-spacing': ['error', 'never'],
     'consistent-return': 'error',
     'consistent-this': 'error',
@@ -90,7 +92,6 @@ module.exports = {
     'no-caller': 'error',
     'no-catch-shadow': 'error',
     'no-confusing-arrow': 'error',
-    'no-continue': 'error',
     'no-div-regex': 'error',
     'no-duplicate-imports': 'error',
     'no-else-return': 'error',
@@ -150,7 +151,6 @@ module.exports = {
     'no-shadow': 'error',
     'no-shadow-restricted-names': 'error',
     'no-spaced-func': 'error',
-    'no-sync': 'error',
     'no-tabs': 'error',
     'no-template-curly-in-string': 'error',
     'no-ternary': 'off',

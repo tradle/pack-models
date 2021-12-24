@@ -4,7 +4,7 @@
   "description": "package data models, interpolate values, etc.",
   "main": "index.js",
   "bin": {
-    "pack-models": "./cmd.js"
+    "pack-models": "bin/pack-models"
   },
   "repository": {
     "type": "git",
@@ -14,18 +14,18 @@
     "models"
   ],
   "author": "pgmemk",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/tradle/pack-models/issues"
   },
   "homepage": "https://github.com/tradle/pack-models#readme",
   "dependencies": {
-    "@google-cloud/translate": "^1.1.0",
+    "@google-cloud/translate": "^6.3.1",
     "bluebird": "^3.5.1",
-    "dot-prop": "^4.1.1",
+    "dot-prop": "^6.0.1",
     "findit": "^2.0.0",
     "minimist": "^1.2.0",
-    "pify": "^3.0.0"
+    "pify": "^5.0.0"
   },
   "peerDependencies": {
     "aws-sdk": ">=2",
@@ -36,7 +36,7 @@
   },
   "devDependencies": {
     "aws-sdk": "^2.407.0",
-    "eslint": "^4.17.0",
-    "s3-ls": "^2.0.1"
+    "eslint": "^8.5.0",
+    "s3-ls": "^3.0.0"
   }
 }

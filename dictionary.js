@@ -1,3 +1,5 @@
+/* eslint-disable no-process-env */
+/* eslint-disable no-extra-parens */
 const Promise = require('bluebird')
 const path = require('path')
 const pify = require('pify')
@@ -5,7 +7,7 @@ const fs = pify(require('fs'))
 const _ = require('lodash')
 const Translate = require('@google-cloud/translate')
 const aws = require('aws-sdk')
-const s3ls = require('s3-ls');
+const s3ls = require('s3-ls')
 
 const MODEL = 'model'
 const PROPERTY_NAME = 'propertyName'
@@ -17,41 +19,46 @@ const DICTIONARIES_FOLDER = 'dictionaries/'
 module.exports = { writeDictionary, writeDictionaries }
 
 const translate = new Translate();
-var s3 = new aws.S3()
+const s3 = new aws.S3()
 aws.config.setPromisesDependency(Promise);
 
-async function writeDictionaries({modelsDir, lang, newOnly, all, domain}) {
+async function writeDictionaries ({
+  // eslint-disable-next-line no-inline-comments
+  modelsDir, lang, newOnly /* Memo:, all */, domain
+}) {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    console.log('Please set environment variable GOOGLE_APPLICATION_CREDENTIALS to allow models translation')
+    console.log(
+      'Please set environment variable GOOGLE_APPLICATION_CREDENTIALS ' +
+      ' to allow models translation'
+    )
     return
   }
   if (!process.env.AWS_PROFILE) {
     console.log('Please check if you use the correct AWS_PROFILE')
     return
   }
-  let langs, allLanguages
-  if (lang) //  &&  lang !== 'en')
+  let langs
+  // Memo: if (lang && lang !== 'en')
+  if (lang)
     langs = lang.split(',')
   else {
-    allLanguages = true
-    let [languages] = await translate.getLanguages()
+    const [languages] = await translate.getLanguages()
     langs = languages.map(l => l.code)
   }
 
   modelsDir = path.resolve(modelsDir)
   let models
-  let parts = modelsDir.split('/')
-  let dir = parts[parts.length - 2]
+  const parts = modelsDir.split('/')
+  const dir = parts[parts.length - 2]
   if (modelsDir.indexOf('.json') === -1) {
     let files = await fs.readdir(modelsDir)
-    files = files.filter(file => /\.json$/.test(file))
+    files = files.filter(file => (/\.json$/).test(file))
 
     models = files.map(file => {
       return require(path.join(modelsDir, file))
     })
-  }
-  else {
-    let ddir = path.resolve(dir)
+  } else {
+    const ddir = path.resolve(dir)
     if (!fs.existsSync(ddir))
       fs.mkdirSync(ddir)
     models = require(modelsDir)
@@ -62,12 +69,12 @@ async function writeDictionaries({modelsDir, lang, newOnly, all, domain}) {
   else
     len = langs.length
 
-  let s3Dir = (domain && domain.split('.')[0]) ?? dir
-  let lister = s3ls({bucket: BUCKET});
-  let folder = `${DICTIONARIES_FOLDER}${s3Dir}/`
+  const s3Dir = (domain && domain.split('.')[0]) || dir
+  const lister = s3ls({bucket: BUCKET});
+  const folder = `${DICTIONARIES_FOLDER}${s3Dir}/`
   let fileNames
   try {
-    let data = await lister.ls(folder)
+    const data = await lister.ls(folder)
     fileNames = data.files
   } catch (err) {
     console.log(err.message, err.stack)
@@ -75,42 +82,46 @@ async function writeDictionaries({modelsDir, lang, newOnly, all, domain}) {
   }
 
   let i = 0
+  // eslint-disable-next-line no-constant-condition
   while (true) {
-    let newLangs = []
-    for (j=0; j<len  &&  i<langs.length; i++) {
-      let l = langs[i]
-      let fn = `${folder}dictionary_${l}.json`
-      if (newOnly  &&  fileNames.includes(fn))
+    const newLangs = []
+    for (let j = 0; j < len && i < langs.length; i += 1, j += 1) {
+      const l = langs[i]
+      const fn = `${folder}dictionary_${l}.json`
+      if (newOnly && fileNames.includes(fn))
         continue
 
       newLangs.push(l)
-      j++
     }
-    await Promise.all(newLangs.map(lang => writeDictionary({models, lang, newOnly, dir: s3Dir})))
+    // eslint-disable-next-line no-await-in-loop
+    await Promise.all(newLangs
+      .map(newLang => writeDictionary({models, newLang, newOnly, dir: s3Dir}))
+    )
     if (i === langs.length)
       break
+    // eslint-disable-next-line no-await-in-loop
     await timeout(60000)
   }
 }
-function timeout(ms) {
+function timeout (ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function writeDictionary({models, lang, newOnly, dir}) {
+async function writeDictionary ({models, lang, newOnly, dir}) {
   let fn = `/dictionary_${lang.replace('-', '')}.json`
   if (dir)
     fn = `${dir}${fn}`
   else
     fn = `.${fn}`
   let dfile
-  var paramsGet = {
+  const paramsGet = {
     Bucket: BUCKET,
-    Key: `${DICTIONARIES_FOLDER}${fn}`,
+    Key: `${DICTIONARIES_FOLDER}${fn}`
    };
   try {
-    let res = await s3.getObject(paramsGet).promise()
+    const res = await s3.getObject(paramsGet).promise()
     dfile = JSON.parse(Buffer.from(res.Body).toString('utf8'))
-    if (dfile  && newOnly)
+    if (dfile && newOnly)
       return
     if (!dfile)
       dfile = []
@@ -124,21 +135,20 @@ async function writeDictionary({models, lang, newOnly, dir}) {
     dfile = []
   }
 
-  let currentIds = {}
-  dfile.forEach(({ type, model, name, en, description }) => {
-    let id
-    if (type === MODEL)
-      id = [type, name, en].join('_')
-    else
-      id = [model, name, en].join('_')
-    // if (description)
-    //   id += `_${description}`
+  const currentIds = {}
+  // eslint-disable-next-line no-inline-comments
+  dfile.forEach(({ type, model, name, en /* Passed in: , description */ }) => {
+    const id = (type === MODEL)
+      ? [type, name, en].join('_')
+      : [model, name, en].join('_')
+    // Memo: if (description)
+    // Memo:   id += `_${description}`
     currentIds[id] = true
   })
 
   console.log(`Translating to ${lang}`)
-  let keys = Object.keys(models)
-  let result = await Promise.all(keys.map(id => translateModel({
+  const keys = Object.keys(models)
+  const result = await Promise.all(keys.map(id => translateModel({
     model: models[id],
     lang,
     dictionary: dfile,
@@ -147,117 +157,124 @@ async function writeDictionary({models, lang, newOnly, dir}) {
 
   // Check if some models/props were deleted
   let hasChanged
-  let newIds = {}
+  const newIds = {}
   result.forEach(r => {
     _.extend(newIds, r.newIds)
     if (r.changed)
       hasChanged = true
   })
-  for (let p in currentIds) {
+  for (const p in currentIds) {
     if (newIds[p])
       continue
-    let parts = p.split('_')
-    let filter, idx
-    if (parts[0] === MODEL)
-      filter = {type: MODEL, name: parts[1], en: parts[2]}
-    else
-      filter = {model: parts[0], name: parts[1], en: parts[2]}
-    idx = _.findIndex(dfile, filter)
-    let rm = dfile.splice(idx, 1)
     hasChanged = true
   }
-  if (!hasChanged  &&  !newOnly)
+  if (!hasChanged && !newOnly)
     return
   dfile.sort((a, b) => {
     return a.en > b.en
   })
 
-  var paramsPut = {
+  const paramsPut = {
     Body: Buffer.from(JSON.stringify(dfile, 0, 2)),
     Bucket: BUCKET,
     Key: `${DICTIONARIES_FOLDER}${fn}`,
     ACL: 'public-read'
-   };
-   s3.putObject(paramsPut, function(err, data) {
-     if (err)
-       console.log(err, err.stack); // an error occurred
-     else
-       console.log(data);           // successful response
-   });
+  }
+  s3.putObject(paramsPut, (err, data) => {
+    if (err) {
+      // An error occurred
+      console.log(err, err.stack);
+    } else {
+      // Successful response
+      console.log(data);
+    }
+  })
 }
 
 const translateModel = async ({ model, dictionary, lang, currentIds }) => {
   const m = model
   const { id } = m
 
-  if (!m  ||  !m.title || !id)
-    debugger
-  let mid = ['model', id, m.title].join('_')
+  // Memo: if (!m || !m.title || !id) {
+  // Memo:   debugger
+  // Memo: }
+  const mid = ['model', id, m.title].join('_')
 
-  let newIds = {[mid]: true}
+  const newIds = {[mid]: true}
 
   let hasChanged
   if (!currentIds[mid]) {
     hasChanged = true
-    let obj = await addToDictionary({ dictionary, model, title: m.title, lang })
+    const obj = await addToDictionary({
+      dictionary, model, title: m.title, lang
+    })
     if (m.enum) {
       obj.enum = {}
-      m.enum.forEach(async ({id, title}) => {
+      // eslint-disable-next-line no-inline-comments
+      m.enum.forEach(async ({ /* Also available: id, */ title}) => {
         obj.enum[id] = await translateText(title, lang)
       })
     }
-  }
-  else if (m.enum) {
-    let idx = dictionary.findIndex(r => r.type === 'model'  &&  r.name === m.id)
-    let obj = dictionary[idx]
+  } else if (m.enum) {
+    const idx = dictionary.findIndex(r => r.type === 'model' && r.name === m.id)
+    const obj = dictionary[idx]
     if (obj.enum.length !== m.enum.length) {
       hasChanged = true
-      for (let i=0; i<m.enum.length; i++) {
-        let { id, title } = m.enum[i]
-        if (!obj.enum[id])
-          obj.enum[id] = await translateText(title, lang)
+      for (let i=0; i<m.enum.length; i += 1) {
+        const { id: mEId, mETitle } = m.enum[i]
+        if (!obj.enum[mEId])
+          // eslint-disable-next-line no-await-in-loop
+          obj.enum[mEId] = await translateText(mETitle, lang)
       }
     }
   }
-  let props = m.properties
-  for (let p in props) {
+  const props = m.properties
+  for (const p in props) {
     if (p.charAt(0) === '_')
       continue
 
-    let { title, description, units } = props[p]
-    let pid, notDefault
+    let { title } = props[p]
+    const { description, units } = props[p]
+    let pid
+    let notDefault = false
     if (title) {
       pid = [id, p, title].join('_')
       notDefault = true
-      // if (description)
-      //   pid += `_${description}`
-    }
-    else {
+      // Memo: if (description)
+      // Memo:   pid += `_${description}`
+    } else {
       title = makeLabel(p)
-      pid = [description &&  id || DEFAULT, p, title].join('_')
+      pid = [(description && id) || DEFAULT, p, title].join('_')
       if (description) {
         notDefault = true
-        // pid += `_${description}`
+        // Memo: pid += `_${description}`
       }
     }
     newIds[pid] = true
     if (!currentIds[pid]) {
       currentIds[pid] = true
       hasChanged = true
-      await addToDictionary({dictionary, model: notDefault && model, propertyName: p, description, units, title, lang})
+      // eslint-disable-next-line no-await-in-loop
+      await addToDictionary({
+        dictionary, model: notDefault && model,
+        propertyName: p, description, units, title, lang
+      })
     }
   }
   return { changed: hasChanged, newIds }
 }
-async function addToDictionary({dictionary, model, propertyName, title, description, units, lang}) {
-  let obj = {
+
+async function addToDictionary ({
+  dictionary, model, propertyName, title, description, units, lang
+}) {
+  const obj = {
     [lang]: await translateText(title, lang),
     en: title,
     name: propertyName || model.id,
-    type: propertyName && PROPERTY_NAME || MODEL,
+    type: (propertyName && PROPERTY_NAME) || MODEL
   }
   if (propertyName)
-    obj.model = model  &&  model.id || DEFAULT
+    obj.model = (model && model.id) || DEFAULT
   if (description)
     obj.description = await translateText(description, lang)
   if (units)
@@ -265,20 +282,18 @@ async function addToDictionary({dictionary, model, propertyName, title, descript
   dictionary.push(obj)
   return obj
 }
-async function translateText(text, lang) {
-  if (lang === 'en')
-    return text
+async function translateText (text, lang) {
+  if (lang === 'en') return text
   const results = await translate.translate(text, lang)
-  let translations = results[0];
-  translations =  translations.charAt(0).toUpperCase() + translations.slice(1)
+  let [translations] = results
+  translations = translations.charAt(0).toUpperCase() + translations.slice(1)
   return Array.isArray(translations) ? translations[0] : translations
 }
 
-function makeLabel(label) {
+function makeLabel (label) {
   return label
-        // insert a space before all caps
-        .replace(/([A-Z])/g, ' $1')
-        // uppercase the first character
-        .replace(/^./, str => str.toUpperCase())
+    // Insert a space before all caps
+    .replace(/([A-Z])/g, ' $1')
+    // Uppercase the first character
+    .replace(/^./, str => str.toUpperCase())
 }
-

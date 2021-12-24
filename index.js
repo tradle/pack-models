@@ -65,7 +65,7 @@ function merge (modelsDir, outFilePath) {
     files = files.filter((file) => (/\.json$/).test(file))
 
     const models = files.map(file => {
-      let model = require(path.join(modelsDir, file))
+      const model = require(path.join(modelsDir, file))
       return {
         id: model.id,
         relPath: path.relative(outDir, path.join(modelsDir, file))

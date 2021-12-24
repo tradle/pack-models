@@ -2,15 +2,17 @@
 
 /* eslint-disable no-console,max-len,no-process-exit */
 
-const { merge, embedValues } = require('./index')
-const { writeDictionaries } = require('./dictionary')
-const { convertToJson } = require('./convertCsvToJson')
+const { merge, embedValues } = require('../index')
+const { writeDictionaries } = require('../dictionary')
+const { convertToJson } = require('../convertCsvToJson')
+const { version, name } = require('../package.json')
 const HELP = `
-  Usages:
+Usage:
 
-  build-models --input ./models --output ./models.js --values ./values
+  pack-models --input ./models --output ./models.js --values ./values
 
-  Options:
+Options:
+
   --input, -i   path/to/models directory
   --output, -o  path/to/models.js output file
   --array, -a   export array of models instead of id->model map
@@ -21,6 +23,8 @@ const HELP = `
   --newOnly,    -n new languages only
   --file,       -f convertToJson
   --domain,     -m dictionary domain
+
+${name}@${version}
 `
 
 const argv = require('minimist')(process.argv.slice(2), {
@@ -38,10 +42,6 @@ const argv = require('minimist')(process.argv.slice(2), {
 })
 
 const { input, output, values, help, dictionary, languages, file, array, newOnly, domain } = argv
-if (help) {
-  console.log(HELP)
-  process.exit(0)
-}
 const tasks = []
 
 if (file) {
@@ -50,23 +50,28 @@ if (file) {
     process.exit(0)
   }
   console.log(`generate dictionary: ${dictionary}`)
-  tasks.push(convertToJson({ modelsDir: dictionary, file, lang: languages }))
+  tasks.push(() => convertToJson({ modelsDir: dictionary, file, lang: languages }))
 }
 if (dictionary) {
   console.log(`generate dictionary: ${dictionary}`)
-  tasks.push(writeDictionaries({ modelsDir: dictionary, lang: languages || 'en', newOnly, domain }))
+  tasks.push(() => writeDictionaries({ modelsDir: dictionary, lang: languages || 'en', newOnly, domain }))
 }
 if (input && values) {
   console.log('embedding values')
-  tasks.push(embedValues(input, values))
+  tasks.push(() => embedValues(input, values))
 }
 
 if (input && output) {
   console.log('merging models')
-  tasks.push(merge(input, output, array))
+  tasks.push(() => merge(input, output, array))
 }
 
-Promise.all(tasks).catch((err) => {
+if (help || tasks.length === 0) {
+  console.log(HELP)
+  process.exit(0)
+}
+
+Promise.all(tasks.map(task => task())).catch((err) => {
   console.error(err.stack)
   process.exitCode = 1
 })
