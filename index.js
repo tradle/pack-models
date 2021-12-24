@@ -98,10 +98,13 @@ function prettify (obj) {
 
 function genModelsFile (models) {
   const getters = models.map(
-    ({ id, relPath }) => `  get ['${id}']() { return require('./${relPath}') }`
+    ({ id, relPath }) => `  get '${id}' () { return require('./${relPath}') }`
   )
 
-  return `const models = module.exports = {
+  return `/* eslint-disable brace-style */
+const models = {
 ${getters.join(',\n')}
-}`
+}
+module.exports = models
+`
 }
