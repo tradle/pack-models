@@ -95,7 +95,7 @@ async function writeDictionaries ({
     }
     // eslint-disable-next-line no-await-in-loop
     await Promise.all(newLangs
-      .map(newLang => writeDictionary({models, newLang, newOnly, dir: s3Dir}))
+      .map(lang => writeDictionary({models, lang, newOnly, dir: s3Dir}))
     )
     if (i === langs.length)
       break
