@@ -85,14 +85,16 @@ async function writeDictionaries ({
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const newLangs = []
-    for (let j = 0; j < len && i < langs.length; i += 1, j += 1) {
+    for (let j = 0; j < len && i < langs.length; i += 1) {
       const l = langs[i]
       const fn = `${folder}dictionary_${l}.json`
       if (newOnly && fileNames.includes(fn))
         continue
 
       newLangs.push(l)
+      j += 1
     }
+
     // eslint-disable-next-line no-await-in-loop
     await Promise.all(newLangs
       .map(lang => writeDictionary({models, lang, newOnly, dir: s3Dir}))
@@ -221,10 +223,10 @@ const translateModel = async ({ model, dictionary, lang, currentIds }) => {
     if (obj.enum.length !== m.enum.length) {
       hasChanged = true
       for (let i=0; i<m.enum.length; i += 1) {
-        const { id: mEId, mETitle } = m.enum[i]
-        if (!obj.enum[mEId])
+        const { id, title } = m.enum[i]
+        if (!obj.enum[id])
           // eslint-disable-next-line no-await-in-loop
-          obj.enum[mEId] = await translateText(mETitle, lang)
+          obj.enum[id] = await translateText(title, lang)
       }
     }
   }
