@@ -1,5 +1,5 @@
-This repository provides two key features for working with models: Multi-Language Support and Model Merging. These tools streamline the process of localizing and consolidating model data for use in various applications.
-Features
+This repository provides two key features for working with models: Multi-Language Support and Model Merging. These tools streamline the process of localizing and consolidating model data for use in various applications.  
+
 ## Multi-Language Support
 
 Translate model-facing information, such as titles, labels, descriptions, and units, into specified languages. This feature uses Google Cloud's Translation service to ensure accurate translations.
