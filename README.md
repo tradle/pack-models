@@ -1,4 +1,9 @@
-This repository provides two key features for working with models: Multi-Language Support and Model Merging. These tools streamline the process of localizing and consolidating model data for use in various applications.  
+This repository provides two key features for working with models: Multi-Language Support and Model Merging (model merging only used for tradle models). These tools streamline the process of localizing and consolidating model data for use in various applications.  
+
+To use the Multi-Language Support feature, install the package in your configuration directory by running the following command:
+```
+npm i -S @tradle/pack-models
+```
 
 ## Multi-Language Support
 
@@ -21,7 +26,8 @@ Setup:
     -l: List of languages to translate into (default: English if unspecified).  
     -m: Domain name (default: the name of the configuration directory).  
 
-## Model Merging - used only to translate common models
+## Model Merging 
+_only for Tradle models_
 
 Combines all JSON model files from the specified directory into a single merge.js file. This simplifies managing and deploying models.
 Setup:
