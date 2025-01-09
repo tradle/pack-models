@@ -38,3 +38,7 @@ OR you can run it from command line in the root of your configuration directory:
     -d: Directory containing the models.  
     -l: List of languages to translate into (default: English if unspecified).  
     -m: Domain name (default: the name of the configuration directory).  
+
+The translation process generates a file named dictionary_[language].json, where [language] corresponds to the target language code (e.g., dictionary_fr.json for French).
+
+The resulting file will be stored in the S3.
