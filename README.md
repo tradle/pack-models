@@ -26,7 +26,7 @@ Setup:
   ```
   "scripts": {
     ...
-    "dictionaries": "pack-models -d ./models -l fr,es,zh -m bnp",
+    "translations": "pack-models -d ./models -l fr,es,zh -m bnp",
   }
   ```
 OR you can run it from command line in the root of your configuration directory:
@@ -38,23 +38,3 @@ OR you can run it from command line in the root of your configuration directory:
     -d: Directory containing the models.  
     -l: List of languages to translate into (default: English if unspecified).  
     -m: Domain name (default: the name of the configuration directory).  
-
-## Model Merging 
-_only for Tradle models_
-
-Combines all JSON model files from the specified directory into a single merge.js file. This simplifies managing and deploying models.
-Setup:
-
-Add the following script to your package.json:
-```
-"scripts": {
-  ...
-  "merge": "pack-models -i ./models -o ./models.js"
-}
-```
-where:
-
-  -i: Input directory containing the JSON model files.  
-  -o: Output file where the merged models will be saved.  
-
-For an example of the output checkout [models.js](https://github.com/tradle/models/blob/master/models.js).
